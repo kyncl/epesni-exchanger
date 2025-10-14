@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+
+.jetbrains,
+.jetbrains * {
+    font-family: "JetBrains Mono", monospace;
+    font-optical-sizing: auto;
+    font-style: normal;
+}

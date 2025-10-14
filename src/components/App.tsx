@@ -1,21 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import '../style/App.css';
+import { fetchCurrencies } from '../lib/currencyFetching';
+import type { currencyStamp, Rate } from '../lib/currency';
+import { convertUnixToDate, getTimeDifference } from '../lib/time';
+import { CurrencyDropdown } from './CurrencyDropdown';
 
 const currencyApi = import.meta.env.VITE_CURRENCY_EXCHANGE_API;
 
-interface currencyStamp {
-    unixStamp: number,
-    rates: Rate[]
-};
-
-interface Rate {
-    currencyName: string,
-    amount: number,
-}
-
-const convertUnixToDate = (stamp: number): Date => {
-    return new Date(stamp * 1000);
-}
 
 function App() {
     const defaultCurrency = "EUR";
@@ -23,42 +14,18 @@ function App() {
 
     const [currentStamp, setCurrentStamp] = useState<currencyStamp | null>(null);
 
-    const [lastUpdateDateStr, setLastUpdateDateStr] = useState("");
-    const [diffNowLastUpdateStr, setDiffNowLastUpdateStr] = useState("");
+    const [timeInfo, setTimeInfo] = useState(<></>);
 
     const [result, setResult] = useState<number | null>(null);
     const [amout, setAmount] = useState<number | null>(null);
     const [fromCurrency, setFromCurrency] = useState<Rate | null>();
     const [toCurrency, setToCurrency] = useState<Rate | null>(null);
 
-
-    const fetchCurrencies = async ({ url }: { url: string }) => {
-        const response = await fetch(url);
-        if (!response.ok)
-            return null;
-        const data = await response.json();
-        const rates = data.rates;
-        let newRates: Rate[] = []
-        for (const [key, value] of Object.entries(rates)) {
-            let newAmount = 0;
-            if (typeof value === "number") {
-                newAmount = value;
-            }
-            newRates.push({
-                currencyName: key,
-                amount: newAmount,
-            });
-        }
-
-        setCurrentStamp({
-            unixStamp: data.time_last_update_unix,
-            rates: newRates
-        });
-    };
-
     useEffect(() => {
         const fetching = async () => {
-            await fetchCurrencies({ url: `${currencyApi}${defaultCurrency}` });
+            const newStamp = await fetchCurrencies({ url: `${currencyApi}${defaultCurrency}` });
+            if (newStamp)
+                setCurrentStamp(newStamp);
         }
         fetching();
     }, []);
@@ -66,30 +33,13 @@ function App() {
     // time info handle
     useEffect(() => {
         const stampDate = convertUnixToDate(currentStamp?.unixStamp ?? 0);
-        const currentDate = Date.now();
-        const dateDifference = Math.abs(currentDate - stampDate.getTime());
-        setLastUpdateDateStr(`${stampDate.toLocaleDateString("cs-CZ")} ${stampDate.toLocaleTimeString("cs-CZ")}`);
-        let updateDateRender = "";
-        const seconds = Math.floor(dateDifference / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-        if (days > 0) {
-            updateDateRender += `${days} day${days > 1 ? 's' : ''} `;
-        }
-        if (hours % 24 > 0) {
-            updateDateRender += `${hours % 24} hour${hours % 24 > 1 ? 's' : ''} `;
-        }
-        if (minutes % 60 > 0) {
-            updateDateRender += `${minutes % 60} minute${minutes % 60 > 1 ? 's' : ''} `;
-        }
-        if (seconds % 60 > 0 && days === 0 && hours === 0) { // Only show seconds if less than an hour
-            updateDateRender += `${seconds % 60} second${seconds % 60 > 1 ? 's' : ''} `;
-        }
-        if (updateDateRender !== "") {
-            updateDateRender += " ago";
-        }
-        setDiffNowLastUpdateStr(updateDateRender);
+        const lastUpdateDateStr = `${stampDate.toLocaleDateString("cs-CZ")} ${stampDate.toLocaleTimeString("cs-CZ")}`;
+        const diffNowLastUpdateStr = getTimeDifference({ currentStamp: currentStamp });
+        setTimeInfo(
+            <div className='flex justify-center flex-col items-center'>
+                <p>{lastUpdateDateStr}</p>
+                <p>({diffNowLastUpdateStr})</p>
+            </div>)
     }, [currentStamp]);
 
     useEffect(() => {
@@ -105,8 +55,10 @@ function App() {
         }
     }, [currentStamp])
 
-    const getNewToCurrency = ({ newToCurrency }: { newToCurrency: string }) => {
-        fetchCurrencies({ url: `${currencyApi}${newToCurrency}` });
+    const getNewToCurrency = async ({ newToCurrency }: { newToCurrency: string }) => {
+        const newStamp = await fetchCurrencies({ url: `${currencyApi}${newToCurrency}` });
+        if (newStamp)
+            setCurrentStamp(newStamp)
     };
 
     useEffect(() => {
@@ -115,58 +67,75 @@ function App() {
         }
     }, [amout, fromCurrency, toCurrency]);
 
+    const toCurrencyHandle = (e: ChangeEvent<HTMLSelectElement>) => {
+        const possibleRate = e.target.value.split("-");
+        if (possibleRate.length == 2) {
+            setToCurrency({
+                currencyName: possibleRate[0],
+                amount: parseFloat(possibleRate[1] ?? 0),
+            })
+        }
+    }
+    const fromCurrencyHandle = (e: ChangeEvent<HTMLSelectElement>) => {
+        const possibleRate = e.target.value.split("-");
+        if (possibleRate.length == 2) {
+            setFromCurrency({
+                currencyName: possibleRate[0],
+                amount: parseFloat(possibleRate[1] ?? 0),
+            })
+            getNewToCurrency({ newToCurrency: possibleRate[0] });
+        }
+    }
+
 
     return (
         <div className='jetbrains'>
-            <h1 className='text-4xl text-center'>Epseni exchanger</h1>
-            <input
-                onChange={(e) => {
-                    const value = parseFloat(e.target.value);
-                    if (!isNaN(value)) {
-                        setAmount(value);
-                    }
-                }}
-                type='number'
-                name='amount'
-                className='border border-black'
-            />
-            <select name='fromCurrency'
-                onChange={(e) => {
-                    const possibleRate = e.target.value.split("-");
-                    if (possibleRate.length == 2) {
-                        setFromCurrency({
-                            currencyName: possibleRate[0],
-                            amount: parseFloat(possibleRate[1] ?? 0),
-                        })
-                        getNewToCurrency({ newToCurrency: possibleRate[0] });
-                    }
-                }}>
-                {currentStamp?.rates.map((currency) =>
-                    <option key={currency.currencyName} value={`${currency.currencyName}-${currency.amount}`}>{currency.currencyName}</option>
-                )}
-            </select>
-
-            <h2>{result}</h2>
-            <select name='toCurrency'
-                onChange={(e) => {
-                    const possibleRate = e.target.value.split("-");
-                    if (possibleRate.length == 2) {
-                        setToCurrency({
-                            currencyName: possibleRate[0],
-                            amount: parseFloat(possibleRate[1] ?? 0),
-                        })
-                    }
-                }}
+            <h1 className='text-3xl md:text-4xl text-center p-5'>Epseni exchanger</h1>
+            <div className='h-[75vh] flex-col flex justify-center items-center'>
+                <div className='flex md:justify-center items-center'>
+                    <input
+                        onChange={(e) => {
+                            if (e.target.value !== ""
+                                && e.target.value !== null) {
+                                const value = parseFloat(e.target.value);
+                                if (!isNaN(value)) {
+                                    setAmount(value);
+                                }
+                            }
+                            else {
+                                setResult(null);
+                            }
+                        }}
+                        type='text'
+                        name='amount'
+                        autoFocus={true}
+                        className='border-2 rounded-xl 
+                        w-full md:w-fit pl-3
+                    border-black text-2xl md:text-4xl'
+                    />
+                    <CurrencyDropdown
+                        currentStamp={currentStamp}
+                        handle={fromCurrencyHandle}
+                    />
+                </div>
+                <div className='flex flex-col md:flex-row justify-center items-center m-5'>
+                    <h2 className='text-xl md:text-4xl 
+                    md:mr-5 font-bold'
+                    >{result}</h2>
+                    <CurrencyDropdown
+                        currentStamp={currentStamp}
+                        handle={toCurrencyHandle}
+                    />
+                </div>
+                <p className='text-lg md:text-xl 
+                font-light text-center'
+                >{!result ? "Write number please :3" : ""}</p>
+            </div>
+            <div className='absolute 
+            bottom-5 w-full md:left-1/2 md:-translate-x-1/2'
             >
-                {currentStamp?.rates.map((currency) =>
-                    <option key={currency.currencyName} value={`${currency.currencyName}-${currency.amount}`}>{currency.currencyName}</option>
-                )}
-            </select>
-
-            {currentStamp ?
-                <p>Last update: {lastUpdateDateStr} ({diffNowLastUpdateStr})</p>
-                : <></>
-            }
+                {timeInfo}
+            </div>
         </div>
     )
 }

@@ -30,3 +30,15 @@ export const getTimeDifference = ({ currentStamp }: { currentStamp: currencyStam
     }
     return updateDateRender;
 }
+
+export const timeInfoUpdate = ({ currentStamp }: { currentStamp: currencyStamp | null }) => {
+    const stampDate = convertUnixToDate(currentStamp?.unixStamp ?? 0);
+    const lastUpdateDateStr = `${stampDate.toLocaleDateString("cs-CZ")} ${stampDate.toLocaleTimeString("cs-CZ")}`;
+    const diffNowLastUpdateStr = getTimeDifference({ currentStamp: currentStamp });
+    return (
+        <div className='flex justify-center flex-col items-center' >
+            <p>{lastUpdateDateStr} </p>
+            <p>({diffNowLastUpdateStr})</p>
+        </div>
+    );
+} 

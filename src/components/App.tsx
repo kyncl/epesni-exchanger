@@ -4,6 +4,7 @@ import { fetchCurrencies } from '../lib/currencyFetching';
 import { fromCurrencyHandle, toCurrencyHandle, type currencyStamp, type Rate } from '../lib/currency';
 import { timeInfoUpdate } from '../lib/time';
 import { CurrencyDropdown } from './CurrencyDropdown';
+import { getSavedRates } from '../lib/localStorage';
 
 const currencyApi = import.meta.env.VITE_CURRENCY_EXCHANGE_API;
 const defaultCurrency = "EUR";
@@ -36,8 +37,14 @@ function App() {
     useEffect(() => {
         const fetching = async () => {
             const newStamp = await fetchCurrencies({ url: `${currencyApi}${defaultCurrency}` });
-            if (newStamp)
+            if (newStamp) {
                 setCurrentStamp(newStamp);
+                localStorage.setItem("savedCunrrencyStamp", JSON.stringify(newStamp));
+            }
+            else {
+                const savedStamp = getSavedRates();
+                setCurrentStamp(savedStamp);
+            }
         }
         fetching();
     }, []);

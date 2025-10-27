@@ -1,9 +1,16 @@
 import type { currencyStamp, Rate } from "./currency";
 
 export const fetchCurrencies = async ({ url }: { url: string }): Promise<currencyStamp | null> => {
-    const response = await fetch(url);
+    let response = null;
+    try {
+        response = await fetch(url);
+    }
+    catch {
+        return null;
+    }
     if (!response.ok)
         return null;
+
     const data = await response.json();
     const rates = data.rates;
     let newRates: Rate[] = []

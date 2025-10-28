@@ -1,6 +1,7 @@
-import type { currencyStamp, Rate } from "./currency";
+import { CurrencyStamp } from "./CurrencyStamp";
+import { Rate } from "./Rate";
 
-export const fetchCurrencies = async ({ url }: { url: string }): Promise<currencyStamp | null> => {
+export const fetchCurrencies = async ({ url }: { url: string }): Promise<CurrencyStamp | null> => {
     let response = null;
     try {
         response = await fetch(url);
@@ -19,16 +20,20 @@ export const fetchCurrencies = async ({ url }: { url: string }): Promise<currenc
         if (typeof value === "number") {
             newAmount = value;
         }
-        newRates.push({
+        const newRate = Rate.safeParse({
             currencyName: key,
             amount: newAmount,
-        });
+        })
+        if (newRate.success)
+            newRates.push(newRate.data);
     }
-
-    return {
+    const newCurrencyStamp = CurrencyStamp.safeParse({
         unixStamp: data.time_last_update_unix,
         rates: newRates
-    };
+    });
+    if (newCurrencyStamp.success)
+        return newCurrencyStamp.data;
+    return null;
 };
 
 

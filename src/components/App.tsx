@@ -1,10 +1,12 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import '../style/App.css';
-import { fetchCurrencies } from '../lib/currencyFetching';
-import { fromCurrencyHandle, toCurrencyHandle, type currencyStamp, type Rate } from '../lib/currency';
 import { timeInfoUpdate } from '../lib/time';
 import { CurrencyDropdown } from './CurrencyDropdown';
 import { getSavedRates } from '../lib/localStorage';
+import { CurrencyStamp } from '../lib/currency/CurrencyStamp';
+import type { Rate } from '../lib/currency/Rate';
+import { fromCurrencyHandle, toCurrencyHandle } from '../lib/currency/handlers';
+import { fetchCurrencies } from '../lib/currency/fetchCurrencies';
 
 const currencyApi = import.meta.env.VITE_CURRENCY_EXCHANGE_API;
 const defaultCurrency = "EUR";
@@ -13,17 +15,17 @@ function App() {
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [timeInfo, setTimeInfo] = useState(<></>);
 
-    const [currentStamp, setCurrentStamp] = useState<currencyStamp | null>(null);
+    const [currentStamp, setCurrentStamp] = useState<CurrencyStamp | null>(null);
     const [result, setResult] = useState<number | null>(null);
-    const [amout, setAmount] = useState<number | null>(null);
+    const [amount, setAmount] = useState<number | null>(null);
     const [fromCurrency, setFromCurrency] = useState<Rate | null>(null);
     const [toCurrency, setToCurrency] = useState<Rate | null>(null);
 
-    // Probably it can be only on one fetch and then do some math, but I'm too lazy
+    /** Probably it can be only on one fetch and then do some math, but I'm too lazy */
     const getNewStamp = async ({ newFromCurrency }: { newFromCurrency: string }) => {
-        const newStamp = await fetchCurrencies({ url: `${currencyApi}${newFromCurrency}` });
-        if (newStamp)
-            setCurrentStamp(newStamp)
+        const fetch = await fetchCurrencies({ url: `${currencyApi}${newFromCurrency}` });
+        if (fetch)
+            setCurrentStamp(fetch)
     };
     const userAmoutInputHandle = (e: ChangeEvent<HTMLInputElement>) => {
         const value = parseFloat(e.target.value);
@@ -39,7 +41,7 @@ function App() {
             const newStamp = await fetchCurrencies({ url: `${currencyApi}${defaultCurrency}` });
             if (newStamp) {
                 setCurrentStamp(newStamp);
-                localStorage.setItem("savedCunrrencyStamp", JSON.stringify(newStamp));
+                localStorage.setItem("savedCurrencyStamp", JSON.stringify(newStamp));
             }
             else {
                 const savedStamp = getSavedRates();
@@ -70,11 +72,11 @@ function App() {
     }, [currentStamp])
 
     useEffect(() => {
-        if (amout && toCurrency) {
-            const roundedResStr = (amout * toCurrency.amount).toFixed(2);
+        if (amount && toCurrency) {
+            const roundedResStr = (amount * toCurrency.amount).toFixed(2);
             setResult(parseFloat(roundedResStr));
         }
-    }, [amout, fromCurrency, toCurrency]);
+    }, [amount, fromCurrency, toCurrency]);
 
     return (
         <div className='jetbrains'>
@@ -93,7 +95,7 @@ function App() {
                     <CurrencyDropdown
                         dropDownName='fromCurrency'
                         currentStamp={currentStamp}
-                        handle={(e) => {
+                        onChangeHandle={(e: ChangeEvent<HTMLSelectElement>) => {
                             setFromCurrency(fromCurrencyHandle({ e, getNewStamp }));
                         }}
                     />
@@ -101,11 +103,11 @@ function App() {
                 <div className='flex flex-col md:flex-row justify-center items-center m-5'>
                     <h2 className='text-xl md:text-4xl 
                     md:mr-5 font-bold'
-                    >{result}</h2>
+                    >{result?.toFixed(2)}</h2>
                     <CurrencyDropdown
                         dropDownName='toCurrency'
                         currentStamp={currentStamp}
-                        handle={(e) => {
+                        onChangeHandle={(e: ChangeEvent<HTMLSelectElement>) => {
                             setToCurrency(toCurrencyHandle(e))
                         }}
                     />

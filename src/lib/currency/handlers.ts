@@ -1,14 +1,5 @@
 import type { ChangeEvent } from "react";
-
-export interface currencyStamp {
-    unixStamp: number,
-    rates: Rate[]
-};
-
-export interface Rate {
-    currencyName: string,
-    amount: number,
-}
+import type { Rate } from "./Rate";
 
 export const toCurrencyHandle = (e: ChangeEvent<HTMLSelectElement>) => {
     const possibleRate = e.target.value.split("-");
@@ -20,12 +11,17 @@ export const toCurrencyHandle = (e: ChangeEvent<HTMLSelectElement>) => {
     }
     return null
 }
-export const fromCurrencyHandle = ({ e, getNewStamp }: {
+
+type FromCurrencyHandleProps = {
     e: ChangeEvent<HTMLSelectElement>,
-    getNewStamp: ({ newFromCurrency }: {
-        newFromCurrency: string;
-    }) => Promise<void>
-}): Rate | null => {
+    getNewStamp: (
+        { newFromCurrency }: { newFromCurrency: string; }
+    ) => Promise<void>
+}
+
+export const fromCurrencyHandle = ({ e, getNewStamp }:
+    FromCurrencyHandleProps
+): Rate | null => {
     const possibleRate = e.target.value.split("-");
     if (possibleRate.length == 2) {
         getNewStamp({ newFromCurrency: possibleRate[0] });

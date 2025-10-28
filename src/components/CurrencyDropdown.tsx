@@ -1,21 +1,24 @@
 import type { ChangeEvent } from "react";
-import type { currencyStamp } from "../lib/currency";
+import type { CurrencyStamp } from "../lib/currency/CurrencyStamp";
 
-export const CurrencyDropdown = ({ dropDownName, currentStamp, handle }:
-    {
-        dropDownName: string,
-        currentStamp: currencyStamp | null,
-        handle: (e: ChangeEvent<HTMLSelectElement>) => void
-    }) => {
+type CurrencyDropdownProps = {
+    dropDownName: string,
+    currentStamp: (CurrencyStamp) | null,
+    onChangeHandle: (e: ChangeEvent<HTMLSelectElement>) => void
+}
+
+export const CurrencyDropdown = ({ dropDownName, currentStamp, onChangeHandle }:
+    CurrencyDropdownProps
+) => {
     return (
         <select name={dropDownName}
             className='ml-3 text-xl md:text-2xl  text-center'
-            onChange={(e) => { handle(e) }}>
+            onChange={onChangeHandle}>
             {currentStamp?.rates.map((currency) =>
                 <option
                     key={currency.currencyName}
                     value={`${currency.currencyName}-${currency.amount}`}
-                    className=""
+                    className="bg-white text-black dark:bg-zinc-900 dark:text-white"
                 >
                     {currency.currencyName}
                 </option>

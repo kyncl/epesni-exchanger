@@ -7,9 +7,7 @@ import { CurrencyStamp } from '../lib/currency/CurrencyStamp';
 import type { Rate } from '../lib/currency/Rate';
 import { fromCurrencyHandle, toCurrencyHandle } from '../lib/currency/handlers';
 import { fetchCurrencies } from '../lib/currency/fetchCurrencies';
-
-const currencyApi = import.meta.env.VITE_CURRENCY_EXCHANGE_API;
-const defaultCurrency = "EUR";
+import { currencyApi, defaultCurrency } from '../main';
 
 function App() {
     const [isFirstLoad, setIsFirstLoad] = useState(true);

@@ -17,6 +17,7 @@ type FromCurrencyHandleProps = {
     getNewStamp: (
         { newFromCurrency }: { newFromCurrency: string; }
     ) => Promise<void>
+
 }
 
 export const fromCurrencyHandle = ({ e, getNewStamp }:

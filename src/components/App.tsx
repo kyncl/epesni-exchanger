@@ -1,6 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import '../style/App.css';
-import { timeInfoUpdate } from '../lib/time';
 import { CurrencyDropdown } from './CurrencyDropdown';
 import { getSavedRates } from '../lib/localStorage';
 import { CurrencyStamp } from '../lib/currency/CurrencyStamp';
@@ -8,12 +7,13 @@ import type { Rate } from '../lib/currency/Rate';
 import { fromCurrencyHandle, toCurrencyHandle } from '../lib/currency/handlers';
 import { fetchCurrencies } from '../lib/currency/fetchCurrencies';
 import { currencyApi, defaultCurrency } from '../main';
+import { useTimeInfo } from '../hooks/useTimeInfo';
 
 function App() {
     const [isFirstLoad, setIsFirstLoad] = useState(true);
-    const [timeInfo, setTimeInfo] = useState(<></>);
 
     const [currentStamp, setCurrentStamp] = useState<CurrencyStamp | null>(null);
+    const timeInfo = useTimeInfo(currentStamp);
     const [result, setResult] = useState<number | null>(null);
     const [amount, setAmount] = useState<number | null>(null);
     const [fromCurrency, setFromCurrency] = useState<Rate | null>(null);
@@ -33,7 +33,6 @@ function App() {
         }
         setAmount(value);
     };
-
     useEffect(() => {
         const fetching = async () => {
             const newStamp = await fetchCurrencies({ url: `${currencyApi}${defaultCurrency}` });
@@ -48,10 +47,6 @@ function App() {
         }
         fetching();
     }, []);
-
-    useEffect(() => {
-        setTimeInfo(timeInfoUpdate({ currentStamp }))
-    }, [currentStamp]);
 
     useEffect(() => {
         if (!currentStamp)

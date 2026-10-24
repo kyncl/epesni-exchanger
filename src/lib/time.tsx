@@ -1,37 +1,39 @@
-import type { currencyStamp } from "./currency";
+import type { CurrencyStamp } from "./currency/CurrencyStamp";
 
 export const convertUnixToDate = (stamp: number): Date => {
     return new Date(stamp * 1000);
 }
 
-export const getTimeDifference = ({ currentStamp }: { currentStamp: currencyStamp | null }): string => {
+export const getTimeDifference = ({ currentStamp }: { currentStamp: (CurrencyStamp) | null }): string => {
     const stampDate = convertUnixToDate(currentStamp?.unixStamp ?? 0);
     const currentDate = Date.now();
     const dateDifference = Math.abs(currentDate - stampDate.getTime());
-    let updateDateRender = "";
-    const seconds = Math.floor(dateDifference / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    if (days > 0) {
-        updateDateRender += `${days} day${days > 1 ? 's' : ''} `;
-    }
-    if (hours % 24 > 0) {
-        updateDateRender += `${hours % 24} hour${hours % 24 > 1 ? 's' : ''} `;
-    }
-    if (minutes % 60 > 0) {
-        updateDateRender += `${minutes % 60} minute${minutes % 60 > 1 ? 's' : ''} `;
-    }
-    if (seconds % 60 > 0 && days === 0 && hours === 0) { // Only show seconds if less than an hour
-        updateDateRender += `${seconds % 60} second${seconds % 60 > 1 ? 's' : ''} `;
-    }
-    if (updateDateRender !== "") {
-        updateDateRender += " ago";
-    }
-    return updateDateRender;
+
+    const updateDateRender = new Intl.RelativeTimeFormat("cs-CZ", { style: "short" });
+
+    const seconds = Math.abs(Math.floor(dateDifference / 1000));
+    const minutes = Math.abs(Math.floor(seconds / 60));
+    const hours = Math.abs(Math.floor(minutes / 60));
+    const days = Math.abs(Math.floor(hours / 24));
+    const months = Math.abs(Math.floor(days / 30));
+    const years = Math.abs(Math.floor(days / 365));
+
+    if (years > 0)
+        return updateDateRender.format(-years, "year");
+    else if (months > 0)
+        return updateDateRender.format(-months, "month");
+    else if (days > 0)
+        return updateDateRender.format(-days, "day");
+    else if (hours > 0)
+        return updateDateRender.format(-hours, "hour");
+    else if (minutes > 0)
+        return updateDateRender.format(-minutes, "minute");
+    else
+        return updateDateRender.format(-seconds, "second");
+
 }
 
-export const timeInfoUpdate = ({ currentStamp }: { currentStamp: currencyStamp | null }) => {
+export const timeInfoUpdate = ({ currentStamp }: { currentStamp: CurrencyStamp | null }) => {
     const stampDate = convertUnixToDate(currentStamp?.unixStamp ?? 0);
     const lastUpdateDateStr = `${stampDate.toLocaleDateString("cs-CZ")} ${stampDate.toLocaleTimeString("cs-CZ")}`;
     const diffNowLastUpdateStr = getTimeDifference({ currentStamp: currentStamp });
